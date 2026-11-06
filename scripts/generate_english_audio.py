@@ -9,6 +9,17 @@ html = (root / 'index.html').read_text()
 block = re.search(r'const words=\{(.*?)\};', html, re.S).group(1)
 words = re.findall(r"([A-Z]):\['([^']+)','([^']+)'\]", block)
 assert len(words) == 26, f'Expected 26 words, found {len(words)}'
+# Speak the letter name as an ordinary word. Passing a lone uppercase character
+# makes some macOS voices announce "capital" before the letter.
+letter_names = {
+    'A': 'ay', 'B': 'bee', 'C': 'see', 'D': 'dee', 'E': 'ee',
+    'F': 'eff', 'G': 'gee', 'H': 'aitch', 'I': 'eye', 'J': 'jay',
+    'K': 'kay', 'L': 'ell', 'M': 'em', 'N': 'en', 'O': 'oh',
+    'P': 'pee', 'Q': 'cue', 'R': 'are', 'S': 'ess', 'T': 'tee',
+    'U': 'you', 'V': 'vee', 'W': 'double you', 'X': 'ex',
+    'Y': 'why', 'Z': 'zee',
+}
+assert set(letter_names) == {letter for letter, _, _ in words}
 output_dir = root / 'assets' / 'english'
 output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -27,9 +38,9 @@ def make_wav(folder, name, text, voice, rate):
 with tempfile.TemporaryDirectory() as temp:
     folder = Path(temp)
     for letter, word, chinese in words:
-        example = 'A box.' if letter == 'X' else f'{word}.'
+        example = 'a box.' if letter == 'X' else f'{word.lower()}.'
         translation = '一个盒子。' if letter == 'X' else chinese + '。'
-        params, letter_frames = make_wav(folder, f'{letter}-letter', letter, 'Samantha', 155)
+        params, letter_frames = make_wav(folder, f'{letter}-letter', letter_names[letter], 'Samantha', 155)
         example_params, example_frames = make_wav(folder, f'{letter}-example', example, 'Samantha', 140)
         chinese_params, chinese_frames = make_wav(folder, f'{letter}-chinese', translation, 'Tingting', 115)
         assert all(p.framerate == params.framerate and p.nchannels == params.nchannels and p.sampwidth == params.sampwidth for p in [example_params, chinese_params])

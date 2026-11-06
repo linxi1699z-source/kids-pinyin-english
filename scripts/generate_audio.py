@@ -4,6 +4,7 @@ import subprocess
 import wave
 
 import miniaudio
+from pinyin_audio_sources import SOUND_TO_SYLLABLE
 
 root = Path(__file__).resolve().parents[1]
 html = (root / 'index.html').read_text()
@@ -14,20 +15,19 @@ def read_map(name):
     block = re.search(rf'const {name}=\{{(.*?)\}};', html, re.S).group(1)
     return {key.strip("'"): value for key, value in re.findall(r"('?[a-zü]+'?):'([^']*)'", block)}
 
-sounds = read_map('pinyinVoice')
 examples = read_map('pinyinExample')
-assert sounds.keys() == examples.keys(), 'Pinyin audio map differs from examples'
-native_symbols = set('b p m f d t n l g k h j q x zh ch sh r z c s a o e i u ü ai ei ao ou an en ang eng er'.split())
-native_dir = output / 'moe-symbols'
-assert all((native_dir / f'{key.replace("ü", "v")}.mp3').exists() for key in native_symbols), 'Missing licensed symbol recordings; run download_moe_symbols.py'
+assert SOUND_TO_SYLLABLE.keys() == examples.keys(), 'Pinyin audio map differs from examples'
+native_dir = output / 'mandarin-syllables'
+assert all((native_dir / f'{name}.mp3').exists() for name in SOUND_TO_SYLLABLE.values()), 'Missing syllable recordings; run download_pinyin_syllables.py'
 
-for kind, mapping, rate in [('sound', sounds, '135'), ('example', examples, '115')]:
-    for syllable, text in mapping.items():
+for kind, rate in [('sound', '135'), ('example', '115')]:
+    for syllable, text in examples.items():
         stem = syllable.replace('ü', 'v')
         temporary = output / f'{stem}-{kind}.aiff'
         final = output / f'{stem}-{kind}.wav'
-        if kind == 'sound' and syllable in native_symbols:
-            decoded = miniaudio.decode_file(str(native_dir / f'{stem}.mp3'), nchannels=1, sample_rate=22050)
+        if kind == 'sound':
+            source = native_dir / f'{SOUND_TO_SYLLABLE[syllable]}.mp3'
+            decoded = miniaudio.decode_file(str(source), nchannels=1, sample_rate=22050)
             with wave.open(str(final), 'wb') as target:
                 target.setnchannels(1)
                 target.setsampwidth(2)
@@ -40,5 +40,5 @@ for kind, mapping, rate in [('sound', sounds, '135'), ('example', examples, '115
         if final.stat().st_size < 5000:
             raise RuntimeError(f'Empty audio: {final}')
 
-print(f'Generated {len(sounds) * 2} Mandarin audio files in {output}')
+print(f'Generated {len(examples) * 2} Mandarin audio files in {output}')
 subprocess.run(['python3', str(root / 'scripts' / 'build_audio_sequence.py')], check=True)
