@@ -29,8 +29,8 @@ with tempfile.TemporaryDirectory() as temp:
     for letter, word, chinese in words:
         example = 'A box.' if letter == 'X' else f'{word}.'
         translation = '一个盒子。' if letter == 'X' else chinese + '。'
-        params, letter_frames = make_wav(folder, f'{letter}-letter', letter, 'Flo (英语（美国）)', 145)
-        example_params, example_frames = make_wav(folder, f'{letter}-example', example, 'Flo (英语（美国）)', 125)
+        params, letter_frames = make_wav(folder, f'{letter}-letter', letter, 'Samantha', 155)
+        example_params, example_frames = make_wav(folder, f'{letter}-example', example, 'Samantha', 140)
         chinese_params, chinese_frames = make_wav(folder, f'{letter}-chinese', translation, 'Tingting', 115)
         assert all(p.framerate == params.framerate and p.nchannels == params.nchannels and p.sampwidth == params.sampwidth for p in [example_params, chinese_params])
         pause = bytes(params.framerate * params.nchannels * params.sampwidth)
